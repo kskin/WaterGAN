@@ -1,1 +1,3 @@
 # WaterGAN
+
+Tutorial, data, and pretrained models coming soon...
