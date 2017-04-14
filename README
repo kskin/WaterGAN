@@ -1,4 +1,4 @@
-#WaterGAN Tutorial
+# WaterGAN Tutorial
 
 ![](watergan.PNG)
 
@@ -35,7 +35,4 @@
   bibsource = {dblp computer science bibliography, http://dblp.org}
 }
 
-Brandon Amos. Image Completion with Deep Learning in TensorFlow.
-http://bamos.github.io/2016/08/09/deep-completion.
-Accessed: [Insert date here]
 ```
