@@ -188,7 +188,7 @@ class WGAN(object):
     self.saver = tf.train.Saver()
 
   def train(self, config):
-    """Train DCGAN"""
+    """Train WGAN"""
     water_data = glob(os.path.join("./data", config.water_dataset, self.input_fname_pattern))
     air_data = glob(os.path.join("./data", config.air_dataset, self.input_fname_pattern))
     depth_data = glob(os.path.join("./data", config.depth_dataset, "*.mat"))
