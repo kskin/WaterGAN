@@ -1,5 +1,7 @@
 # WaterGAN Tutorial
 
+Work in progres...
+
 ![](watergan.PNG)
 
 + This repository contains source code for WaterGAN developed in [WaterGAN: Unsupervised Generative Network to Enable Real-time Color Correction of Monocular Underwater Images](https://arxiv.org/abs/1702.07392).
@@ -10,21 +12,27 @@
 
 1) Download data:
 
-2) Train a model:
+Train a model:
 
-$ python main.py --c_dim=3 --is_train
+```
+$ python main.py --water_dataset full_water_images --air_dataset full_air_images --depth_dataset full_air_depth --input_height=640 --input_width=480 --input_water_height=1360 --input_water_width=1024 --output_height=256 --output_width=256 --is_crop=True
+```
 
 Or use our [pretrained model]().
 
-3) Generate synthetic underwater images:
+Generate synthetic underwater images:
 
-$ python main.py --c_dim=3
+```
+
+```
 
 # Results
 
-![](watergan-samples.png)
+![](figures/air-raw.png)
+![](figures/air-gen.png)
 
-![](mhl-result.png)
+![](figures/mhl-raw.png)
+![](figures/mhl-corrected.png)
   
 # Citations
 
