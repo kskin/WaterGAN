@@ -1,6 +1,6 @@
-# WaterGAN Tutorial
+# WaterGAN
 
-Work in progres...
+Work in progress...
 
 <p align="center">
   <img src="https://github.com/kskin/WaterGAN/blob/master/watergan.PNG?raw=true"/>
