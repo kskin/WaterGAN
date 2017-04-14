@@ -16,7 +16,7 @@ import scipy.io as sio
 from ops import *
 from utils import *
 
-class DCGAN(object):
+class WGAN(object):
   def __init__(self, sess, input_height=64, input_width=64, input_water_height=64, input_water_width=64, is_crop=False,
          is_stereo=False,batch_size=64, sample_num = 64, output_height=64, output_width=64,
          y_dim=None, z_dim=100, gf_dim=64, df_dim=64,gfc_dim=1024, dfc_dim=1024, c_dim=3, max_depth=3.0,save_epoch = 100,
@@ -62,6 +62,9 @@ class DCGAN(object):
 
     self.c_dim = c_dim
 
+    self.sw = 256
+    self.sh = 256
+
     # batch normalization : deals with poor initialization helps gradient flow
     self.d_bn1 = batch_norm(name='d_bn1')
     self.d_bn2 = batch_norm(name='d_bn2')
@@ -90,7 +93,7 @@ class DCGAN(object):
       self.y= tf.placeholder(tf.float32, [self.batch_size, self.y_dim], name='y')
 
     image_dims = [self.output_height, self.output_width, self.c_dim]
-
+    sample_dims = [64,64, self.c_dim]
     self.water_inputs = tf.placeholder(
       tf.float32, [self.batch_size] + image_dims, name='real_images')
     self.air_inputs = tf.placeholder(
@@ -101,6 +104,21 @@ class DCGAN(object):
       tf.float32, [self.num_samples] + image_dims, name='sample_inputs')
     self.waterdepth_inputs = tf.placeholder(
       tf.float32, [self.batch_size] + [self.output_height,self.output_width,1], name='waterdepth')
+    self.depth_small_inputs = tf.placeholder(
+      tf.float32, [self.batch_size] + [64,64,1], name='depth_small')
+
+
+    self.sample_air_inputs = tf.placeholder(
+      tf.float32, [self.batch_size] + [self.sw,self.sh,3], name='air_images')
+    self.sample_depth_inputs = tf.placeholder(
+      tf.float32, [self.batch_size] + [self.sw,self.sh,1], name='depth')
+    self.sample_fake_inputs = tf.placeholder(
+      tf.float32, [self.batch_size] + [self.sw,self.sh,3], name='depth')
+
+    sample_air_inputs = self.sample_air_inputs
+    sample_depth_inputs = self.sample_depth_inputs
+    depth_small_inputs = self.depth_small_inputs
+    sample_fake_inputs = self.sample_fake_inputs
 
     water_inputs = self.water_inputs
     water_sample_inputs = self.water_sample_inputs
@@ -111,14 +129,19 @@ class DCGAN(object):
     self.z = tf.placeholder(
       tf.float32, [None, self.z_dim], name='z')
     self.z_sum = tf.summary.histogram("z", self.z)
-
+    self.sample_z = tf.placeholder(
+      tf.float32, [None, self.z_dim], name='z')
     self.G,eta_r,eta_g,eta_b,beta = self.wc_generator(self.z,air_inputs, depth_inputs)
     if self.is_stereo:
         self.D, self.D_logits = self.discriminator(water_inputs,depth_inputs)
     else:
         self.D, self.D_logits = self.discriminator(water_inputs)
 
-    self.wc_sampler = self.wc_sampler(self.z,air_inputs, depth_inputs)
+    #self.sample_discriminator = self.sample_discriminator(sample_fake_inputs,reuse=True)
+
+    print(self.D_logits)
+    self.wc_sampler = self.wc_sampler(self.sample_z,sample_air_inputs, sample_depth_inputs,depth_small_inputs)
+    #self.wc_sampler = self.wc_sampler(self.z,air_inputs, depth_inputs)
     if self.is_stereo:
         self.D_, self.D_logits_ = self.discriminator(self.G,depth_inputs, reuse=True)
     else:
@@ -141,8 +164,12 @@ class DCGAN(object):
     self.eta_r_loss = -tf.minimum(tf.reduce_min(eta_r),0)*1000
     self.eta_g_loss = -tf.minimum(tf.reduce_min(eta_g),0)*1000
     self.eta_b_loss = -tf.minimum(tf.reduce_min(eta_b),0)*1000
+    self.eta_r_loss1 = -tf.minimum(tf.reduce_min((1.0-eta_r)),0)*1000
+    self.eta_g_loss1 = -tf.minimum(tf.reduce_min((1.0-eta_g)),0)*1000
+    self.eta_b_loss1 = -tf.minimum(tf.reduce_min((1.0-eta_b)),0)*1000
+
     self.beta_loss = -tf.minimum(tf.reduce_min(beta),0)
-    self.g_loss = self.g_loss+ self.eta_r_loss + self.eta_g_loss +self.eta_b_loss
+    self.g_loss = self.g_loss+ self.eta_r_loss + self.eta_g_loss +self.eta_b_loss + self.eta_r_loss1 + self.eta_g_loss1 +self.eta_b_loss1
 
     self.d_loss_real_sum = tf.summary.scalar("d_loss_real", self.d_loss_real)
     self.d_loss_fake_sum = tf.summary.scalar("d_loss_fake", self.d_loss_fake)
@@ -150,8 +177,7 @@ class DCGAN(object):
     self.d_loss = self.d_loss_real + self.d_loss_fake
 
     self.g_loss_sum = tf.summary.scalar("g_loss", self.g_loss)
-    self.d_loss_sum = tf.summary.scalar("d_loss", self.d_loss)
-    
+    self.d_loss_sum = tf.summary.scalar("d_loss", self.d_loss) 
     self.D = tf.summary.scalar("D_realdata", self.D)
     self.D_ = tf.summary.scalar("D_fakedata", self.D_)
 
@@ -349,11 +375,11 @@ class DCGAN(object):
           #        self.air_inputs: sample_air_images,
            #       self.depth_inputs: sample_depth_images ,
             #      self.water_inputs: sample_water_images })
-        if (np.mod(epoch,5)==1) and (checkprint==0):
+#        if (np.mod(epoch,5)==1) and (checkprint==0):
         #print(self.D)
         #print(self.D_)
-        #if (epoch == self.save_epoch) and (checkprint == 0):
-            # Load samples in batches of 100
+        if (epoch == self.save_epoch) and (checkprint == 0):
+#            # Load samples in batches of 100
             #print(self.num_samples)
 
             checkprint = 1
@@ -365,15 +391,18 @@ class DCGAN(object):
                 sample_depth_batch_files = depth_data[idx*config.batch_size:(idx+1)*config.batch_size]
                 #sample_waterdepth_batch_files = waterdepth_data[idx*100:(idx+1)*100]
                 if self.is_crop:
-                    sample_air_batch = [scipy.misc.imresize(scipy.misc.imread(sample_air_batch_file),(self.output_height,self.output_width,3)) for sample_air_batch_file in sample_air_batch_files]
-                    sample_water_batch = [scipy.misc.imresize(scipy.misc.imread(sample_water_batch_file),(self.output_height,self.output_width,3)) for sample_water_batch_file in sample_water_batch_files]
+                    sample_air_batch = [scipy.misc.imresize(scipy.misc.imread(sample_air_batch_file),(self.sw,self.sh,3)) for sample_air_batch_file in sample_air_batch_files]
+                    sample_water_batch = [scipy.misc.imresize(scipy.misc.imread(sample_water_batch_file),(self.sw,self.sh,3)) for sample_water_batch_file in sample_water_batch_files]
                     #sample_depth_batch = [scipy.misc.imresize(sio.loadmat(sample_depth_batch_file)["depth"],(self.output_height,self.output_width),mode='F') for sample_depth_batch_file in sample_depth_batch_files]
-                    sample_depth_batch = [self.read_depth(sample_depth_batch_file) for sample_depth_batch_file in sample_depth_batch_files]
+                    sample_depth_small_batch = [self.read_depth_small(sample_depth_batch_file) for sample_depth_batch_file in sample_depth_batch_files]
+                    sample_depth_batch = [self.read_depth_sample(sample_depth_batch_file) for sample_depth_batch_file in sample_depth_batch_files]
                     #sample_waterdepth_batch = [scipy.misc.imresize(sio.loadmat(sample_waterdepth_batch_file)["depth"],(self.output_height,self.output_width),mode='F') for sample_waterdepth_batch_file in sample_waterdepth_batch_files]
                 else:
                     sample_air_batch = [scipy.misc.imread(sample_air_batch_file) for sample_air_batch_file in sample_air_batch_files]
                     sample_water_batch = [scipy.misc.imread(sample_water_batch_file) for sample_water_batch_file in sample_water_batch_files]
-                    sample_depth_batch = [self.read_depth(sample_depth_batch_file) for sample_depth_batch_file in sample_depth_batch_files]
+                    sample_depth_batch = [self.read_depth_sample(sample_depth_batch_file) for sample_depth_batch_file in sample_depth_batch_files]
+                    sample_depth_small_batch = [self.read_depth_small(sample_depth_batch_file) for sample_depth_batch_file in sample_depth_batch_files]
+                    #sample_depth_small_batch = [self.read_depth_small(sample_depth_batch_file) for sample_depth_batch_file in sample_depth_batch_files]
                     #sample_depth_batch = [sio.loadmat(sample_depth_batch_file)["depth"] for sample_depth_batch_file in sample_depth_batch_files]
                     #sample_waterdepth_batch = [sio.loadmat(sample_waterdepth_batch_file)["depth"] for sample_waterdepth_batch_file in sample_waterdepth_batch_files]
                 sample_air_images = np.array(sample_air_batch).astype(np.float32)
@@ -382,39 +411,76 @@ class DCGAN(object):
                 #sample_depth_batch_f =np.array(sample_depth_batch).astype(np.float32)  
                 #sample_depth_batch_n = np.multiply(self.max_depth,np.divide(sample_depth_batch_f,sample_depth_batch_f.max()))
                 #sample_depth_batch_images = np.expand_dims(sample_depth_batch,axis=3)
-
+                sample_depth_small_images = np.expand_dims(sample_depth_small_batch,axis=3)
                 sample_depth_images = np.expand_dims(sample_depth_batch,axis=3)
                 #sample_waterdepth_images = np.expand_dims(sample_waterdepth_batch,axis=3)
                 print(sample_depth_images.shape)
                 sample_z = np.random.uniform(-1,1,[config.batch_size,self.z_dim]).astype(np.float32)
 
                 samples = self.sess.run([self.wc_sampler],
-                    feed_dict={self.z:sample_z,self.air_inputs:sample_air_images,self.depth_inputs: sample_depth_images})
+                    feed_dict={self.sample_z:sample_z,self.sample_air_inputs:sample_air_images,self.sample_depth_inputs: sample_depth_images,self.depth_small_inputs:sample_depth_small_images})
+#    feed_dict={self.z:sample_z,self.air_inputs:sample_air_images,self.depth_inputs: sample_depth_images})
                        # self.water_inputs: sample_water_images})
 
                 #conv_ims = np.asarray(convs)
                 #conv_ims = np.squeeze(conv_ims)
                 sample_ims = np.asarray(samples)
                 sample_ims = np.squeeze(sample_ims)
-                #print(sample
+                sample_fake_images = sample_ims[:,0:self.sw,0:self.sh,0:3]
+               # print("here")
+               # print(sample_fake_images.shape)
+                #sample_fake_images = scipy.misc.imresize(sample_fake_images,[64,64,64,3])
+                #sample_fake_images=np.asarray(sample_fake_images)
+               # print(sample_fake_images.shape)
+                sample_fake_images_small = np.empty([0,self.sw,self.sh,3])
                 for img_idx in range(0,self.batch_size):
-                    out_name = "sample_out5/fake_%0d_%02d_%02d.png" % (epoch, img_idx,idx)
-                    sample_im = sample_ims[img_idx,0:256,0:256,0:3]
+                    out_name = "paper/fake_%0d_%02d_%02d.png" % (epoch, img_idx,idx)
+                    sample_im = sample_ims[img_idx,0:self.sh,0:self.sw,0:3]
                     sample_im = np.squeeze(sample_im)
+                    #print(sample_im.shape)
                     scipy.misc.imsave(out_name,sample_im)
-                    out_name = "sample_out5/air_%0d_%02d_%02d.png" % (epoch, img_idx,idx)
-                    sample_im = sample_air_images[img_idx,0:256,0:256,0:3]
+                    out_name = "paper/air_%0d_%02d_%02d.png" % (epoch, img_idx,idx)
+                    sample_im = sample_air_images[img_idx,0:self.sw,0:self.sh,0:3]
                     #sample_im = conv_ims[img_idx,0:256,0:256,0:3]
                     sample_im = np.squeeze(sample_im)
                     scipy.misc.imsave(out_name,sample_im)
-                    out_name = "sample_out5/depth_%0d_%02d_%02d.mat" % (epoch, img_idx,idx)
-                    sample_im = sample_depth_images[img_idx,0:256,0:256,0]
+                    out_name = "paper/depth_%0d_%02d_%02d.mat" % (epoch, img_idx,idx)
+                    sample_im = sample_depth_images[img_idx,0:self.sh,0:self.sw,0]
                     sample_im = np.squeeze(sample_im)
                     sio.savemat(out_name,{'depth':sample_im})
+                    sample_fake = sample_fake_images[img_idx,0:self.sh,0:self.sw,0:3]
+                    sample_fake = np.squeeze(sample_fake)
+                    sample_fake = scipy.misc.imresize(sample_fake,[self.sw,self.sh,3],interp='bicubic')
+                    sample_fake = np.expand_dims(sample_fake,axis=0)
+                    sample_fake_images_small = np.append(sample_fake_images_small, sample_fake, axis=0)
+                #print(sample_ims.shape)
 
-        if np.mod(counter, 500) == 2:
+                #print(sample_fake_images_small.shape)
+                #disc_result = self.sess.run([self.sample_discriminator],
+                #    feed_dict={self.sample_fake_inputs:sample_fake_images_small})
+                #disc_result = np.asarray(disc_result)
+                #disc_result = np.squeeze(disc_result)
+                #disc_result = np.expand_dims(disc_result,axis=1)
+                #disc_result1 = tf.nn.sigmoid_cross_entropy_with_logits(
+                #    logits=disc_result, targets=tf.ones([64,1]))
+                #disc_result2 = np.asarray(disc_result1)
+                #disc_result[disc_result >= 0.5] = 1
+                #disc_result[disc_result < 0.5] = 0
+                #print(disc_result)
+                #outfile = "my_results-mhl-c.txt"
+                #fh = open(outfile,"a")
+                #for img_idx in range(0,self.batch_size):
+                #    out_name = "result_%0d_%02d_%02d.png" % (epoch, img_idx,idx)
+                #    discwrite = "%d" % disc_result[img_idx]
+                #    fh.write(out_name + " " + discwrite+"\n")
+                #print(self.sess.run('logistic_loss_3:0'))
+                #fh.close
+
+
+
+        if np.mod(epoch, 5) == 1:
           self.save(config.checkpoint_dir, counter)
-        #print(self.g_vars.eval())
+          print("saving checkpoint")
 
   def discriminator(self, image, depth=None,y=None, reuse=False):
     with tf.variable_scope("discriminator") as scope:
@@ -436,6 +502,30 @@ class DCGAN(object):
         h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
 
       return tf.nn.sigmoid(h4), h4
+
+
+  def sample_discriminator(self, image, depth=None,y=None, reuse=False):
+    with tf.variable_scope("discriminator") as scope:
+      if reuse:
+        scope.reuse_variables()
+      if self.is_stereo:
+        imd = tf.concat(3,[image,depth])
+        h0 = lrelu(conv2d(imd, self.df_dim, name='d_h0_conv'))
+        h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim*2, name='d_h1_conv')))
+        h2 = lrelu(self.d_bn2(conv2d(h1, self.df_dim*4, name='d_h2_conv')))
+        h3 = lrelu(self.d_bn3(conv2d(h2, self.df_dim*8, name='d_h3_conv')))
+        h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
+
+      else:
+        h0 = lrelu(conv2d(image, self.df_dim, name='d_h0_conv'))
+        h1 = lrelu(self.d_bn1(conv2d(h0, self.df_dim*2, name='d_h1_conv')))
+        h2 = lrelu(self.d_bn2(conv2d(h1, self.df_dim*4, name='d_h2_conv')))
+        h3 = lrelu(self.d_bn3(conv2d(h2, self.df_dim*8, name='d_h3_conv')))
+        h4 = linear(tf.reshape(h3, [self.batch_size, -1]), 1, 'd_h3_lin')
+
+      return tf.nn.sigmoid(h4)
+      #return h4
+
 
   def wc_generator(self, z, image, depth, y=None):
     with tf.variable_scope("wc_generator") as scope:
@@ -475,30 +565,72 @@ class DCGAN(object):
       h0z = tf.nn.relu(self.g_bn0(self.h0z))
       h0z = tf.multiply(h0z,depth)
 
-      with tf.variable_scope('g_h1_conv'):
-          w = tf.get_variable('g_w',[ 5,5, h0z.get_shape()[-1], 1],
-              initializer=tf.truncated_normal_initializer(stddev=0.02))
-      h1z = tf.nn.conv2d(h0z, w, strides=[1, 2, 2, 1], padding='SAME')
-      h1z = lrelu(self.g_bn1(h1z))
+#      with tf.variable_scope('g_h1_conv'):
+##          w = tf.get_variable('g_w',[ 5,5, h0z.get_shape()[-1], 1],
+#              initializer=tf.truncated_normal_initializer(stddev=0.02))
+#      h1z = tf.nn.conv2d(h0z, w, strides=[1, 2, 2, 1], padding='SAME')
+#      h1z = lrelu(self.g_bn1(h1z))
 
-      with tf.variable_scope('g_h2_conv'):
-          w2 = tf.get_variable('g_w_2',[ 5,5, h1z.get_shape()[-1], 1],
-              initializer=tf.truncated_normal_initializer(stddev=0.02))
-      h9z = tf.nn.conv2d(h1z, w2, strides=[1, 2, 2, 1], padding='SAME')
-      h9z = lrelu(self.g_bn4(h9z))
+ #     with tf.variable_scope('g_h2_conv'):
+ #         w2 = tf.get_variable('g_w_2',[ 5,5, h1z.get_shape()[-1], 1],
+ #             initializer=tf.truncated_normal_initializer(stddev=0.02))
+ #     h9z = tf.nn.conv2d(h1z, w2, strides=[1, 2, 2, 1], padding='SAME')
+ #     h9z = lrelu(self.g_bn4(h9z))
 
-      h8z, self.h2z_w, self.h2z_b = deconv2d(
-          h9z, [64,32,32, 1], name='g_h2_deconv', with_w=True)
+  #    h8z, self.h2z_w, self.h2z_b = deconv2d(
+  #        h9z, [64,32,32, 1], name='g_h2_deconv', with_w=True)
 
 
-      self.h2z, self.h2z_w, self.h2z_b = deconv2d(
-          h8z, [64,64,64, 1], name='g_h1_deconv', with_w=True)
+   #   self.h2z, self.h2z_w, self.h2z_b = deconv2d(
+   #       h8z, [64,64,64, 1], name='g_h1_deconv', with_w=True)
       #h2z = tf.nn.relu(self.g_bn2(self.h2z))
      # h2z = tf.mul(tf.nn.sigmoid(self.h2z),255)
      ########################################################
-      h2z = self.h2z
+    #  h2z = self.h2z
       #h_out = tf.mul(h2z, h0)
-      h2 = tf.add(h2z,h0)
+
+
+      with tf.variable_scope('g_h1_conv'):
+          w = tf.get_variable('g_w',[ 5,5, h0z.get_shape()[-1], 1],
+              initializer=tf.truncated_normal_initializer(stddev=0.02))
+      h1z = tf.nn.conv2d(h0z, w, strides=[1, 1,1, 1], padding='SAME')
+      h_g = lrelu(self.g_bn1(h1z))
+
+      #self.h2z, self.h2z_w, self.h2z_b = deconv2d(
+      #    h1z, [64,64,64,1], name='g_h1_deconv', with_w=True)
+      #h_r = self.h2z
+
+      with tf.variable_scope('g_h1_convr'):
+          wr = tf.get_variable('g_wr',[ 5,5, h0z.get_shape()[-1], 1],
+              initializer=tf.truncated_normal_initializer(stddev=0.02))
+      h1zr = tf.nn.conv2d(h0z, wr, strides=[1, 1, 1, 1], padding='SAME')
+      h_r = lrelu(self.g_bn3(h1zr))
+
+      #self.h2zr, self.h2z_wr, self.h2z_br = deconv2d(
+      #    h1zr, [64,64,64, 1], name='g_h1_deconvr', with_w=True)
+      #h_g = self.h2zr
+
+      with tf.variable_scope('g_h1_convb'):
+          wb = tf.get_variable('g_wb',[ 5,5, h0z.get_shape()[-1], 1],
+              initializer=tf.truncated_normal_initializer(stddev=0.02))
+      h1zb = tf.nn.conv2d(h0z, wb, strides=[1, 1, 1, 1], padding='SAME')
+      h_b = lrelu(self.g_bn4(h1zb))
+
+      #self.h2zb, self.h2z_wb, self.h2z_bb = deconv2d(
+      #    h1zb, [64,64,64, 1], name='g_h1_deconvb', with_w=True)
+      #h_b = self.h2zb
+
+      #h2z = self.h2z
+      h_r = tf.squeeze(h_r,axis=3)
+      h_g = tf.squeeze(h_g,axis=3)
+      h_b = tf.squeeze(h_b,axis=3)
+
+      h_final=tf.pack([h_r,h_g,h_b],axis=3)
+
+
+
+
+      h2 = tf.add(h_final,h0)
 
       # Augment 4: vignetting model
       kernlen = 64
@@ -513,11 +645,11 @@ class DCGAN(object):
           A = tf.get_variable('g_amp', [1],
               initializer=tf.truncated_normal_initializer(mean=0.7,stddev=0.3))
       h1 = tf.mul(A,kernel)
-      hav = tf.mul(h0,h1)
+      #hav = tf.mul(h0,h1)
       h_out = tf.mul(h1,h2)
-      return hav, eta_r,eta_g,eta_b, beta
+      return h_out, eta_r,eta_g,eta_b, beta
 
-  def wc_sampler(self, z, image, depth, y=None):
+  def wc_sampler(self, z, image, depth, depth_small,y=None):
     with tf.variable_scope("wc_generator",reuse=True) as scope:
           # Augment 1: water-based attenuation and backscatter
       with tf.variable_scope("g_atten",reuse=True):
@@ -552,24 +684,112 @@ class DCGAN(object):
       self.h0z = tf.reshape(
           self.z_, [-1, 64, 64, 64*1])
       h0z = tf.nn.relu(self.g_bn0(self.h0z))
-      h0z = tf.multiply(h0z,depth)
+      h0z = tf.multiply(h0z,depth_small)
+
+
+    #  with tf.variable_scope('g_h1_conv',reuse=True):
+    #      w = tf.get_variable('g_w',[ 5,5, h0z.get_shape()[-1], 1],
+    #          initializer=tf.truncated_normal_initializer(stddev=0.02))
+    #  h1z = tf.nn.conv2d(h0z, w, strides=[1, 2, 2, 1], padding='SAME')
+    #  h1z = lrelu(self.g_bn1(h1z))
+    #  print(h1z)
+    #  self.h2z, self.h2z_w, self.h2z_b = deconv2d(
+    #      h1z, [64,64,64, 1], name='g_h1_deconv', with_w=True)
+    #  print(self.h2z)
+      #h2z = tf.nn.relu(self.g_bn2(self.h2z))
+      #h2z = tf.mul(tf.nn.sigmoid(self.h2z),255)
+     # h2z = self.h2z
+     # h_out = tf.mul(h2z, h0)
+      #print(h_out)
+
+
+     # with tf.variable_scope('g1_conv',reuse=True):
+     #     w = tf.get_variable('g_w',[ 5,5, h0z.get_shape()[-1], 1],
+     #         initializer=tf.truncated_normal_initializer(stddev=0.02))
+     # h1z = tf.nn.conv2d(h0z, w, strides=[1, 2, 2, 1], padding='SAME')
+     # h1z = lrelu(self.g_bn1(h1z))
+
+      #self.h2z, self.h2z_w, self.h2z_b = deconv2d(
+      #    h1z, [64,64,64,1], name='g_h1_deconv', with_w=True)
+      #h_r = self.h2z
+
+     # with tf.variable_scope('g_h1_convr',reuse=True):
+     #     wr = tf.get_variable('g_wr',[ 5,5, h0z.get_shape()[-1], 1],
+       #       initializer=tf.truncated_normal_initializer(stddev=0.02))
+      #h1zr = tf.nn.conv2d(h0z, wr, strides=[1, 2, 2, 1], padding='SAME')
+     # h1zr = lrelu(self.g_bn3(h1zr))
+
+      #self.h2zr, self.h2z_wr, self.h2z_br = deconv2d(
+      #    h1zr, [64,64,64, 1], name='g_h1_deconvr', with_w=True)
+      #h_g = self.h2zr
+
+      #with tf.variable_scope('g_h1_convb',reuse=True):
+      #    wb = tf.get_variable('g_wb',[ 5,5, h0z.get_shape()[-1], 1],
+      #        initializer=tf.truncated_normal_initializer(stddev=0.02))
+      #h1zb = tf.nn.conv2d(h0z, wb, strides=[1, 2, 2, 1], padding='SAME')
+      #h1zb = lrelu(self.g_bn4(h1zb))
+
+      #self.h2zb, self.h2z_wb, self.h2z_bb = deconv2d(
+      #    h1zb, [64,64,64, 1], name='g_h1_deconvb', with_w=True)
+      #h_b = self.h2zb
+
+      #h2z = self.h2z
+      #h_rxlt = tf.image.resize_images(h_r,[128,128],method=2)
+      #h_gxlt = tf.image.resize_images(h_g,[128,128],method=2)
+      #h_bxlt = tf.image.resize_images(h_b,[128,128],method=2)
+      #h_rxl = tf.image.resize_images(h_rxlt,[256,256],method=2)
+      #h_gxl = tf.image.resize_images(h_gxlt,[256,256],method=2)
+      #h_bxl = tf.image.resize_images(h_bxlt,[256,256],method=2)
+
 
 
       with tf.variable_scope('g_h1_conv',reuse=True):
           w = tf.get_variable('g_w',[ 5,5, h0z.get_shape()[-1], 1],
               initializer=tf.truncated_normal_initializer(stddev=0.02))
-      h1z = tf.nn.conv2d(h0z, w, strides=[1, 2, 2, 1], padding='SAME')
-      h1z = lrelu(self.g_bn1(h1z))
-      print(h1z)
-      self.h2z, self.h2z_w, self.h2z_b = deconv2d(
-          h1z, [64,64,64, 1], name='g_h1_deconv', with_w=True)
-      print(self.h2z)
-      #h2z = tf.nn.relu(self.g_bn2(self.h2z))
-      #h2z = tf.mul(tf.nn.sigmoid(self.h2z),255)
-      h2z = self.h2z
-     # h_out = tf.mul(h2z, h0)
-      #print(h_out)
-      h2 = tf.add(h2z,h0)
+      h1z = tf.nn.conv2d(h0z, w, strides=[1, 1, 1, 1], padding='SAME')
+      h_g = lrelu(self.g_bn1(h1z))
+
+      #self.h2z, self.h2z_w, self.h2z_b = deconv2d(
+      #    h1z, [64,64,64,1], name='g_h1_deconv', with_w=True)
+      #h_r = self.h2z
+
+      with tf.variable_scope('g_h1_convr',reuse=True):
+          wr = tf.get_variable('g_wr',[ 5,5, h0z.get_shape()[-1], 1],
+              initializer=tf.truncated_normal_initializer(stddev=0.02))
+      h1zr = tf.nn.conv2d(h0z, wr, strides=[1, 1, 1, 1], padding='SAME')
+      h_r = lrelu(self.g_bn3(h1zr))
+
+      #self.h2zr, self.h2z_wr, self.h2z_br = deconv2d(
+      #    h1zr, [64,64,64, 1], name='g_h1_deconvr', with_w=True)
+      #h_g = self.h2zr
+
+      with tf.variable_scope('g_h1_convb',reuse=True):
+          wb = tf.get_variable('g_wb',[ 5,5, h0z.get_shape()[-1], 1],
+              initializer=tf.truncated_normal_initializer(stddev=0.02))
+      h1zb = tf.nn.conv2d(h0z, wb, strides=[1,1,1, 1], padding='SAME')
+      h_b = lrelu(self.g_bn4(h1zb))
+
+      h_rxlt = tf.image.resize_images(h_r,[128,128],method=2)
+      h_gxlt = tf.image.resize_images(h_g,[128,128],method=2)
+      h_bxlt = tf.image.resize_images(h_b,[128,128],method=2)
+      h_rxl = tf.image.resize_images(h_rxlt,[256,256],method=2)
+      h_gxl = tf.image.resize_images(h_gxlt,[256,256],method=2)
+      h_bxl = tf.image.resize_images(h_bxlt,[256,256],method=2)
+
+
+      h_rxl = tf.squeeze(h_rxl,axis=3)
+      h_gxl = tf.squeeze(h_gxl,axis=3)
+      h_bxl = tf.squeeze(h_bxl,axis=3)
+
+      print(h_r)
+
+      print(h_rxl)
+      h_final=tf.pack([h_rxl,h_gxl,h_bxl],axis=3)
+      #h_finalxl = tf.image.resize_images(h_final,[256,256])
+      h2 = tf.add(h_final,h0)
+
+
+    #  h2 = tf.add(h_final,h0)
 
      # Augment 4: vignetting model
       kernlen = 64
@@ -584,12 +804,15 @@ class DCGAN(object):
           A = tf.get_variable('g_amp', [1],
               initializer=tf.truncated_normal_initializer(mean=0.7,stddev=0.3))
       h1 = tf.mul(A,kernel)
+      h1_xlt = tf.image.resize_images(h1,[128,128],method=2)
+      h1_xl = tf.image.resize_images(h1_xlt,[256,256],method=2)
+
 
       #h5 = tf.expand_dims(h2z,axis=1)
       #h5 = tf.expand_dims(h5,axis=2)
-      h_out = tf.mul(h1,h2)
-      hav = tf.mul(h0,h1)
-      return hav
+      h_out = tf.mul(h1_xl,h2)
+      #hav = tf.mul(h0,h1)
+      return h2
 
 
       # Augment 1: water-based attenuation and backscatter
@@ -660,3 +883,24 @@ class DCGAN(object):
     depth = np.multiply(self.max_depth,np.divide(depth,depth.max()))
 
     return depth
+
+  def read_depth_small(self, filename):
+    depth_mat = sio.loadmat(filename)
+    depth=depth_mat["depth"]
+    if self.is_crop:
+      depth = scipy.misc.imresize(depth,(64,64),mode='F')
+    depth = np.array(depth).astype(np.float32)
+    depth = np.multiply(self.max_depth,np.divide(depth,depth.max()))
+
+    return depth
+
+  def read_depth_sample(self, filename):
+    depth_mat = sio.loadmat(filename)
+    depth=depth_mat["depth"]
+    if self.is_crop:
+      depth = scipy.misc.imresize(depth,(self.sw,self.sh),mode='F')
+    depth = np.array(depth).astype(np.float32)
+    depth = np.multiply(self.max_depth,np.divide(depth,depth.max()))
+
+    return depth
+
