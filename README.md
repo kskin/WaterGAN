@@ -2,6 +2,10 @@
 
 Work in progres...
 
+<p align="center">
+  <img src="https://github.com/kskin/WaterGAN/blob/master/watergan.PNG?raw=true"/>
+</p>
+
 ![](watergan.PNG)
 
 + This repository contains source code for WaterGAN developed in [WaterGAN: Unsupervised Generative Network to Enable Real-time Color Correction of Monocular Underwater Images](https://arxiv.org/abs/1702.07392).
@@ -10,28 +14,34 @@ Work in progres...
 
 # Usage
 
-1) Download data:
+Download data:
+
+Coming soon...
 
 Train a model:
 
 ```
-$ python main.py --water_dataset full_water_images --air_dataset full_air_images --depth_dataset full_air_depth --input_height=640 --input_width=480 --input_water_height=1360 --input_water_width=1024 --output_height=256 --output_width=256 --is_crop=True
-```
-
-Or use our [pretrained model]().
-
-Generate synthetic underwater images:
-
-```
-
+$ python main.py --water_dataset water_images --air_dataset air_images --depth_dataset air_depth
 ```
 
 # Results
 
+Original in-air images:
+
 ![](figures/air-raw.png)
+
+Synthetic underwater images produced by WaterGAN:
+
 ![](figures/air-gen.png)
 
+Now we have a dataset with paired true color, depth, and (synthetic) underwater images. We use this to train an end-to-end network for underwater image restoration. For more details, see the [paper].(https://arxiv.org/abs/1702.07392) 
+
+Raw underwater image gathered from a survey in a pure water tank:
+
 ![](figures/mhl-raw.png)
+
+Corrected images using data generated with WaterGAN to train an end-to-end image restoration pipeline:
+
 ![](figures/mhl-corrected.png)
   
 # Citations
