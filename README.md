@@ -32,7 +32,7 @@ Synthetic underwater images produced by WaterGAN:
 
 ![](figures/air-gen.png)
 
-WaterGAN outputs a dataset with paired true color, depth, and (synthetic) underwater images. We can use this to train an end-to-end network for underwater image restoration. For more details, see the [paper](https://arxiv.org/abs/1702.07392).
+WaterGAN outputs a dataset with paired true color, depth, and (synthetic) underwater images. We can use this to train an end-to-end network for underwater image restoration. Source code and pretrained models for the end-to-end network are available [here](https://github.com/ljlijie/UnderwaterColorCorrection). For more details, see the [paper](https://arxiv.org/abs/1702.07392).
 
 Raw underwater images gathered from a survey in a pure water tank:
 
