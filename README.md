@@ -45,9 +45,7 @@ Corrected images using data generated with WaterGAN to train an end-to-end under
 
 ```
 @article{li2017watergan,
-    author    = {Jie Li and
-               Katherine A. Skinner and
-               Ryan M. Eustice and
+    author    = {Jie Li, Katherine A. Skinner, Ryan M. Eustice and
                Matthew Johnson{-}Roberson},
   title     = {WaterGAN: Unsupervised Generative Network to Enable Real-time Color
                Correction of Monocular Underwater Images},
