@@ -2,7 +2,7 @@ import os
 import scipy.misc
 import numpy as np
 os.environ["CUDA_VISIBLE_DEVICES"]="2"
-from mhlmodel import DCGAN
+from mhlmodel import WGAN
 from utils import pp, visualize, to_json
 
 import tensorflow as tf
@@ -17,8 +17,8 @@ flags.DEFINE_integer("input_height", 640, "The size of image to use")
 flags.DEFINE_integer("input_width", 480, "The size of image to use")
 flags.DEFINE_integer("input_water_height", 1360, "The size of real water image to use")
 flags.DEFINE_integer("input_water_width", 1024, "The size of real water image to use")
-flags.DEFINE_integer("output_height", 512, "The size of the output images to produce")
-flags.DEFINE_integer("output_width", 512, "The size of the output images to produce")
+flags.DEFINE_integer("output_height", 256, "The size of the output images to produce")
+flags.DEFINE_integer("output_width", 256, "The size of the output images to produce")
 flags.DEFINE_integer("c_dim", 3, "Dimension of image color. [3]")
 flags.DEFINE_float("max_depth", 3.26, "Max range to seafloor for image survey")
 flags.DEFINE_string("water_dataset", "water_images", "The name of the real water dataset")

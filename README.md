@@ -19,7 +19,6 @@ Coming soon...
 Train a model:
 
 ```
-$ python main.py --water_dataset water_images --air_dataset air_images --depth_dataset air_depth
 ```
 
 # Results
