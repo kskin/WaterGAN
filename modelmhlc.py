@@ -61,8 +61,8 @@ class DCGAN(object):
 
     self.c_dim = c_dim
 
-    self.sw = self.output_height
-    self.sh = self.output_width
+    self.sw = 256
+    self.sh = 256
 
     # batch normalization : deals with poor initialization helps gradient flow
     self.d_bn1 = batch_norm(name='d_bn1')
@@ -626,8 +626,6 @@ class DCGAN(object):
           init_g = tf.random_normal([1,1,1],mean=0.1,stddev=0.01,dtype=tf.float32)
           eta_g = tf.get_variable("g_eta_g",initializer=init_g)
           eta = tf.pack([eta_r,eta_g,eta_b],axis=3)
-          init_b = tf.random_normal([1],mean=0.02,stddev=0.01,dtype=tf.float32)
-          beta = tf.get_variable("g_beta",initializer=init_b)
 
          # init_br = tf.random_normal([1,1,1],mean=-0.01,stddev=0.01,dtype=tf.float32)
          # beta_r = tf.get_variable("g_beta_r",initializer=init_br)
@@ -639,10 +637,7 @@ class DCGAN(object):
 
 
           eta_d = tf.exp(tf.mul(-1.0,tf.mul(depth,eta)))
-          B = tf.divide(beta,eta)
-      h0 = tf.mul(image,eta_d)
-#+tf.mul(B,(1.0-eta_d))
-
+          h0 = tf.mul(image,eta_d)
 
       self.z_, self.h0z_w, self.h0z_b = linear(
           z, 64*64*64*1, 'g_h0_lin', with_w=True)
