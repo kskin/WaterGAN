@@ -31,7 +31,7 @@ flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image s
 flags.DEFINE_boolean("is_train", True, "True for training, False for testing [False]")
 flags.DEFINE_boolean("is_crop", True, "True for training, False for testing [False]")
 flags.DEFINE_boolean("visualize", False, "True for visualizing, False for nothing [False]")
-flags.DEFINE_integer("num_samples",100, "True for visualizing, False for nothing [4000]")
+flags.DEFINE_integer("num_samples",64, "True for visualizing, False for nothing [4000]")
 flags.DEFINE_integer("save_epoch",10, "The size of the output images to produce. If None, same value as output_height [None]")
 FLAGS = flags.FLAGS
 
