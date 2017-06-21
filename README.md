@@ -26,7 +26,7 @@ WaterGAN outputs a dataset with paired true color, depth, and (synthetic) underw
   
 # Citations
 
-If you find this work useful for your research please cite WaterGAN in your publications.
+If you find this work useful for your research, please cite WaterGAN in your publications.
 
 ```
 @article{li2017watergan,
