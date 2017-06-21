@@ -4,8 +4,6 @@ samples
 *.zip
 logs
 test*
-checkpoints
-result-logs
 
 web/js/gen_layers.js
 
