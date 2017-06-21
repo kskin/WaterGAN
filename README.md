@@ -1,7 +1,5 @@
 # WaterGAN
 
-Work in progress...
-
 <p align="center">
   <img src="https://github.com/kskin/WaterGAN/blob/master/watergan.PNG?raw=true"/>
 </p>
@@ -12,38 +10,23 @@ Work in progress...
 
 # Usage
 
-Download data:
+Create a data directory and download data:
 1) MHL test tank dataset:  [MHL.tar.gz](http://www.umich.edu/~dropopen/MHL.tar.gz)
 2) Jamaica field dataset: [Jamaica.tar.gz](http://www.umich.edu/~dropda/Jamaica.tar.gz)
-
-Coming soon...
 
 Train a model:
 
 ```
+python mainmhl.py --water_dataset water_images --air_dataset air_images --depth_dataset air_depth
 ```
 
-# Results
-
-Original in-air images:
-
-![](figures/air-raw.png)
-
-Synthetic underwater images produced by WaterGAN:
-
-![](figures/air-gen.png)
+# Color Correction Network
 
 WaterGAN outputs a dataset with paired true color, depth, and (synthetic) underwater images. We can use this to train an end-to-end network for underwater image restoration. Source code and pretrained models for the end-to-end network are available [here](https://github.com/ljlijie/WaterGAN-color-correction-net). For more details, see the [paper](https://arxiv.org/abs/1702.07392).
-
-Raw underwater images gathered from a survey in a pure water tank:
-
-![](figures/mhl-raw.png)
-
-Corrected images using data generated with WaterGAN to train an end-to-end underwater image restoration network:
-
-![](figures/mhl-corrected.png)
   
 # Citations
+
+If you find this work useful for your research please cite WaterGAN in your publications.
 
 ```
 @article{li2017watergan,
