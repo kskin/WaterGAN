@@ -29,17 +29,13 @@ WaterGAN outputs a dataset with paired true color, depth, and (synthetic) underw
 If you find this work useful for your research, please cite WaterGAN in your publications.
 
 ```
-@article{li2017watergan,
-    author    = {Jie Li, Katherine A. Skinner, Ryan M. Eustice and
-               Matthew Johnson{-}Roberson},
-  title     = {WaterGAN: Unsupervised Generative Network to Enable Real-time Color
-               Correction of Monocular Underwater Images},
-  journal   = {CoRR},
-  volume    = {abs/1702.07392},
-  year      = {2017},
-  url       = {http://arxiv.org/abs/1702.07392},
-  timestamp = {Wed, 01 Mar 2017 14:26:00 +0100},
-  biburl    = {http://dblp.uni-trier.de/rec/bib/journals/corr/LiSEJ17},
-  bibsource = {dblp computer science bibliography, http://dblp.org}
-}
+@article{Li:2017aa,
+	Author = {Jie Li and Katherine A. Skinner and Ryan Eustice and M. Johnson-Roberson},
+	Date-Added = {2017-06-12 22:07:13 +0000},
+	Date-Modified = {2017-06-12 22:12:20 +0000},
+	Journal = {IEEE Robotics and Automation Letters (RA-L)},
+	Keywords = {jrnl},
+	Note = {accepted},
+	Title = {WaterGAN: Unsupervised Generative Network to Enable Real-time Color Correction of Monocular Underwater Images},
+	Year = {2017}}
 ```
