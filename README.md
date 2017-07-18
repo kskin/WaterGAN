@@ -14,10 +14,16 @@ Create a data directory and download data:
 1) MHL test tank dataset:  [MHL.tar.gz](http://www.umich.edu/~dropopen/MHL.tar.gz)
 2) Jamaica field dataset: [Jamaica.tar.gz](http://www.umich.edu/~dropda/Jamaica.tar.gz)
 
-Train a model:
+Train a model with the MHL dataset:
 
 ```
 python mainmhl.py --water_dataset water_images --air_dataset air_images --depth_dataset air_depth
+```
+
+Train a model with the Jamaica dataset:
+
+```
+python mainjamaica.py --water_dataset water_images --air_dataset air_images --depth_dataset air_depth
 ```
 
 # Color Correction Network
