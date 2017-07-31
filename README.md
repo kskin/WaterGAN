@@ -10,9 +10,18 @@
 
 # Usage
 
-Create a data directory and download data:
+Download data:
 1) MHL test tank dataset:  [MHL.tar.gz](http://www.umich.edu/~dropopen/MHL.tar.gz)
 2) Jamaica field dataset: [Jamaica.tar.gz](http://www.umich.edu/~dropda/Jamaica.tar.gz)
+
+WaterGAN/
+  data/
+    air_images/
+      *.png
+    air_depth/
+      *.mat
+    water_images/
+      *.png
 
 Train a model with the MHL dataset:
 
