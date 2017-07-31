@@ -14,15 +14,6 @@ Download data:
 1) MHL test tank dataset:  [MHL.tar.gz](http://www.umich.edu/~dropopen/MHL.tar.gz)
 2) Jamaica field dataset: [Jamaica.tar.gz](http://www.umich.edu/~dropda/Jamaica.tar.gz)
 
-WaterGAN/<br />
-&nbsp;&nbsp;data/<br />
-&nbsp;&nbsp;&nbsp;&nbsp;air_images/<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*.png<br />
-&nbsp;&nbsp;&nbsp;&nbsp;air_depth/<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*.mat<br />
-&nbsp;&nbsp;&nbsp;&nbsp;water_images/<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*.png<br />
-
 Train a model with the MHL dataset:
 
 ```
