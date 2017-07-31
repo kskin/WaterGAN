@@ -14,9 +14,9 @@ Download data:
 1) MHL test tank dataset:  [MHL.tar.gz](http://www.umich.edu/~dropopen/MHL.tar.gz)
 2) Jamaica field dataset: [Jamaica.tar.gz](http://www.umich.edu/~dropda/Jamaica.tar.gz)
 
-WaterGAN/
-  data/
-    air_images/
+WaterGAN/<br />
+  data/<br />
+    air_images/<br />
       *.png
     air_depth/
       *.mat
