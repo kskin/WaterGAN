@@ -16,12 +16,12 @@ Download data:
 
 WaterGAN/<br />
 &nbsp;&nbsp;data/<br />
-&nbsp;&nbsp;&nbsp;&nbsp;    air_images/<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;       *.png<br />
-&nbsp;&nbsp;&nbsp;&nbsp;    air_depth/<br />
- &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      *.mat<br />
-&nbsp;&nbsp;&nbsp;&nbsp;    water_images/<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;      *.png<br />
+&nbsp;&nbsp;&nbsp;&nbsp;air_images/<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*.png<br />
+&nbsp;&nbsp;&nbsp;&nbsp;air_depth/<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*.mat<br />
+&nbsp;&nbsp;&nbsp;&nbsp;water_images/<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*.png<br />
 
 Train a model with the MHL dataset:
 
