@@ -13,6 +13,21 @@
 Download data:
 1) MHL test tank dataset:  [MHL.tar.gz](http://www.umich.edu/~dropopen/MHL.tar.gz)
 2) Jamaica field dataset: [Jamaica.tar.gz](http://www.umich.edu/~dropda/Jamaica.tar.gz)
+3) In air data: Any RGB-D dataset, e.g. [Microsoft 7-Scenes](https://www.microsoft.com/en-us/research/project/rgb-d-dataset-7-scenes/#), [NYU Depth](http://cs.nyu.edu/~silberman/datasets/nyu_depth_v1.html), [UW RGB-D Object](https://www.cs.washington.edu/node/4229), [B3DO](http://kinectdata.com/)<br />
+Note: The current configuration expects 640x480 PNG images for in-air data.
+
+Directory structure:
+
+    .
+    ├── ...
+    ├── data                    
+    │   ├── air_images
+    │   │   └── *.png
+    │   ├── air_depth  
+    │   │   └── *.mat
+    │   └── water_images 
+    │       └── *.png
+    └── ...
 
 Train a model with the MHL dataset:
 
